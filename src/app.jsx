@@ -1,0 +1,142 @@
+// src/App.jsx
+import { useState, lazy, Suspense, useEffect } from "react";
+import { AnimatePresence } from "framer-motion";
+import { Helmet, HelmetProvider } from "react-helmet-async";
+import { Heart } from "lucide-react";
+import { useInvitation } from "@/features/invitation";
+import { useAudio } from "@/hooks/use-audio";
+import staticConfig from "@/config/config";
+
+// Lazy load components for better performance
+const Layout = lazy(() => import("@/components/layout/layout"));
+const MainContent = lazy(
+  () => import("@/features/invitation/components/main-content"),
+);
+const LandingPage = lazy(
+  () => import("@/features/invitation/components/landing-page"),
+);
+
+function App() {
+  const [isInvitationOpen, setIsInvitationOpen] = useState(false);
+  const { config, isLoading, error } = useInvitation();
+  // Use config from API if available, otherwise fall back to static config
+  const activeConfig = config || staticConfig.data;
+  // Initialize audio with config settings
+  const audioControls = useAudio({
+    src: activeConfig?.audio?.src || "/audio/fulfilling-humming.mp3",
+    loop: activeConfig?.audio?.loop !== false,
+  });
+  useEffect(() => {
+    if (config) {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [config]);
+  // Handle opening the invitation - this is called from a user click,
+  // which is the perfect opportunity to start audio (browser policy compliant)
+  const handleOpenInvitation = async () => {
+    // Start audio playback during user interaction
+    await audioControls.play();
+    setIsInvitationOpen(true);
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-pink-50">
+        <div className="text-center">
+          <Heart
+            className="h-12 w-12 text-rose-500 mx-auto mb-4 animate-pulse"
+            fill="currentColor"
+          />
+          <p className="text-gray-600">Loading invitation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-pink-50">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-rose-500 text-6xl mb-4">!</div>
+          <h1 className="text-2xl font-serif text-gray-800 mb-2">
+            Invitation not found
+          </h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">
+            Please check the URL or contact the host for assistance.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <HelmetProvider>
+      <Helmet>
+        {/* Primary Meta Tags */}
+        <title>{activeConfig.title}</title>
+        <meta name="title" content={activeConfig.title} />
+        <meta name="description" content={activeConfig.description} />
+        {/* Prevent Wayback Machine and Web Archiving */}
+        <meta name="robots" content="noindex, nofollow, noarchive, nocache" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive" />
+        <meta name="bingbot" content="noindex, nofollow, noarchive" />
+        <meta name="archive" content="no" />
+        <meta
+          name="cache-control"
+          content="no-cache, no-store, must-revalidate"
+        />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:title" content={activeConfig.title} />
+        <meta property="og:description" content={activeConfig.description} />
+        <meta property="og:image" content={activeConfig.ogImage} />
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={window.location.href} />
+        <meta property="twitter:title" content={activeConfig.title} />
+        <meta
+          property="twitter:description"
+          content={activeConfig.description}
+        />
+        <meta property="twitter:image" content={activeConfig.ogImage} />
+        {/* Favicon */}
+        <link rel="icon" type="image/x-icon" href={activeConfig.favicon} />
+        {/* Additional Meta Tags */}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#FDA4AF" /> {/* Rose-300 color */}
+      </Helmet>
+
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-pink-50">
+            <div className="text-center">
+              <Heart
+                className="h-12 w-12 text-rose-500 mx-auto mb-4 animate-pulse"
+                fill="currentColor"
+              />
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        }
+      >
+        <AnimatePresence mode="wait">
+          {!isInvitationOpen ? (
+            <LandingPage onOpenInvitation={handleOpenInvitation} />
+          ) : (
+            <Layout audioControls={audioControls}>
+              <MainContent />
+            </Layout>
+          )}
+        </AnimatePresence>
+      </Suspense>
+    </HelmetProvider>
+  );
+}
+
+export default App;
