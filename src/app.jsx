@@ -21,7 +21,6 @@ function App() {
   const { config, isLoading, error } = useInvitation();
   // Use config from API if available, otherwise fall back to static config
   const activeConfig = config || staticConfig.data;
-  // Initialize audio with config settings
   const audioControls = useAudio({
     src: activeConfig?.audio?.src || "/audio/fulfilling-humming.mp3",
     loop: activeConfig?.audio?.loop !== false,
@@ -31,8 +30,6 @@ function App() {
       window.history.replaceState({}, "", "/");
     }
   }, [config]);
-  // Handle opening the invitation - this is called from a user click,
-  // which is the perfect opportunity to start audio (browser policy compliant)
   const handleOpenInvitation = async () => {
     // Start audio playback during user interaction
     await audioControls.play();

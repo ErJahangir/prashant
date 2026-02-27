@@ -16,15 +16,11 @@ import {
 
 const db = getFirestore();
 
-// ======================================================
-// Wishes
-// ======================================================
 
 export async function fetchWishes(uid, { limit = 50, offset = 0 } = {}) {
   if (!uid) return { success: false, error: "Missing uid" };
 
   const col = collection(db, "wishes");
-  // Query without orderBy to avoid requiring composite index
   const qq = q(col, where("invitation_uid", "==", uid));
 
   const snap = await getDocs(qq);
