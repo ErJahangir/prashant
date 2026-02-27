@@ -22,7 +22,8 @@ export async function fetchWishes(uid, { limit = 50, offset = 0 } = {}) {
 
   const col = collection(db, "wishes");
   const qq = q(col, where("invitation_uid", "==", uid));
-
+  // sdfsdb
+  // /sdfkjabsfh
   const snap = await getDocs(qq);
   let data = snap.docs.map((d) => {
     const src = d.data();
